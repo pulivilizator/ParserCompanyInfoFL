@@ -3,7 +3,7 @@ import configparser
 from exeptions import GetFileExeption, WriteFileExeption
 
 def _create_file(config):
-    road = config.get("program", "create_file")
+    road = config.get("program", "write_in_file")
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
     worksheet.append(['Тип', 'regNumber', 'Регистрационный номер поставщика', 'Полное название', 'ИНН',
@@ -20,8 +20,9 @@ def _create_file(config):
                       'Сайт', 'Запрещено подавать заявки', 'Причина запрета подачи заявок', 'Запрещено делать закупки',
                       'Причина запрета закупок',
                       'id', None, None, None, None])
-    worksheet.auto_filter.ref = 'A1:AS1'
+    worksheet.auto_filter.ref = 'A1:AT1'
     workbook.save(road)
+    print(f'Создан файл по пути {road}')
 
 
 def _get_rows(config):
@@ -44,7 +45,7 @@ def _writer(row):
     try:
         config = configparser.ConfigParser()
         config.read('config.ini', encoding='utf-8')
-        road = config.get("program", "create_file")
+        road = config.get("program", "write_in_file")
         workbook = openpyxl.load_workbook(road)
 
         worksheet = workbook.active

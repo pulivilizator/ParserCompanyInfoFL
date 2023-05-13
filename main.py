@@ -16,8 +16,11 @@ def _parser(inns, config):
         sleep = 0
     else:
         sleep -= 18
+    min_row = int(config.get("program", "write_row"))
+    if min_row < 1:
+        min_row = 1
     headless = bool(int(config.get("program", "headless")))
-    for row in range(101, len(inns)):
+    for row in range(min_row - 1, len(inns)):
         print(f'Пройдено {row} из {len(inns)} организаций')
         inns[row].insert(13, None)
         inns[row].insert(16, None)
@@ -36,7 +39,6 @@ def _parser(inns, config):
 
             try:
                 if company == 'Человек':
-                    okved = None
                     href = browser.find_element(By.CLASS_NAME, 'mass-group')
                     ActionChains(browser).move_to_element(href).click().perform()
                     time.sleep(6)
@@ -108,7 +110,7 @@ def _sost_org(browser: WebDriver) -> str:
             if 'Состояние организации:' in i.text:
                 sost_org = i.text.split(':')[1].replace('"', '').strip()
                 break
-    except AttributeError:
+    except (NoSuchElementException, AttributeError):
         pass
     return sost_org
 
@@ -119,7 +121,7 @@ def _okved(browser: WebDriver) -> str:
         for i in browser.find_elements(By.CLASS_NAME, 'field.row.row__stretch'):
             if i.get_attribute('data-group') == 'okved':
                 okved = i.find_element(By.CLASS_NAME, 'lnk-appeal').text
-    except AttributeError:
+    except (NoSuchElementException, AttributeError):
         pass
     return okved
 
@@ -217,18 +219,10 @@ def _chek(inn, name) -> tuple[str, str]:
 def main():
     config = configparser.ConfigParser()
     config.read('config.ini', encoding='utf-8')
-    _create_file(config)
+    if not int(config.get("program", "write_type")):
+        _create_file(config)
     inns = _get_rows(config)
     print(f'Найдено {len(inns)} организаций\n'
           f'Начинаю собирать информацию.\n')
     _parser(inns, config)
 
-
-if __name__ == '__main__':
-    config = configparser.ConfigParser()
-    config.read('config.ini', encoding='utf-8')
-    _create_file(config)
-    inns = _get_rows(config)
-    print(f'Найдено {len(inns)} организаций\n'
-          f'Начинаю собирать информацию.\n')
-    _parser(inns)
