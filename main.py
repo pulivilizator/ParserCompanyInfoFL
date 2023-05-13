@@ -11,16 +11,14 @@ import re
 
 
 def _parser(inns, config):
-    counter = 0
     sleep = int(config.get("program", "sleep"))
     if sleep < 18:
         sleep = 0
     else:
         sleep -= 18
     headless = bool(int(config.get("program", "headless")))
-    for row in range(len(inns)):
-        print(f'Пройдено {counter} из {len(inns)} организаций')
-        counter += 1
+    for row in range(101, len(inns)):
+        print(f'Пройдено {row} из {len(inns)} организаций')
         inns[row].insert(13, None)
         inns[row].insert(16, None)
         inns[row].insert(16, None)
@@ -168,30 +166,31 @@ def _income(browser: WebDriver) -> tuple[float | None, float | None]:
 
 def _nalog(browser: WebDriver) -> tuple[str | int, str | int]:
     nalog2021 = nalog2020 = 0
-    nalogs = \
-        [i for i in browser.find_elements(By.CLASS_NAME, 'field-group') if i.get_attribute('data-group') == 'taxpay'][0] \
-            .find_element(By.CLASS_NAME, 'gamlet-period-selector-container-year').find_elements(By.TAG_NAME, 'li')
-    click2021 = [i for i in nalogs if i.get_attribute('data-value') == '2021'][0]
-    click2020 = [i for i in nalogs if i.get_attribute('data-value') == '2020'][0]
-    if 'Суммы доходов и расходов по данным бухгалтерской отчетности организации:' in browser.page_source:
-        elem = browser.find_elements(By.CLASS_NAME, 'toggle')[-2]
-    else:
-        elem = browser.find_elements(By.CLASS_NAME, 'toggle')[-1]
-    ActionChains(browser).move_to_element(elem).click().perform()
+    if 'Уплаченные налоги и сборы (без учета сумм налогов (сборов)' in browser.page_source:
+        nalogs = \
+            [i for i in browser.find_elements(By.CLASS_NAME, 'field-group') if i.get_attribute('data-group') == 'taxpay'][0] \
+                .find_element(By.CLASS_NAME, 'gamlet-period-selector-container-year').find_elements(By.TAG_NAME, 'li')
+        click2021 = [i for i in nalogs if i.get_attribute('data-value') == '2021'][0]
+        click2020 = [i for i in nalogs if i.get_attribute('data-value') == '2020'][0]
+        if 'Суммы доходов и расходов по данным бухгалтерской отчетности организации:' in browser.page_source:
+            elem = browser.find_elements(By.CLASS_NAME, 'toggle')[-2]
+        else:
+            elem = browser.find_elements(By.CLASS_NAME, 'toggle')[-1]
+        ActionChains(browser).move_to_element(elem).click().perform()
 
-    for i in browser.find_element(By.ID, 'tbodyTaxpay').find_elements(By.TAG_NAME, 'tr'):
-        try:
-            if i.get_attribute('data-year-code') == '2021':
-                click2021.click()
-                nalog2021 += float(i.find_elements(By.TAG_NAME, 'td')[1].text.replace(' ', ''))
-        except IndexError:
-            nalog2021 = 0
-        try:
-            if i.get_attribute('data-year-code') == '2020':
-                click2020.click()
-                nalog2020 += float(i.find_elements(By.TAG_NAME, 'td')[1].text.replace(' ', ''))
-        except IndexError:
-            nalog2020 = 0
+        for i in browser.find_element(By.ID, 'tbodyTaxpay').find_elements(By.TAG_NAME, 'tr'):
+            try:
+                if i.get_attribute('data-year-code') == '2021':
+                    click2021.click()
+                    nalog2021 += float(i.find_elements(By.TAG_NAME, 'td')[1].text.replace(' ', ''))
+            except IndexError:
+                nalog2021 = 0
+            try:
+                if i.get_attribute('data-year-code') == '2020':
+                    click2020.click()
+                    nalog2020 += float(i.find_elements(By.TAG_NAME, 'td')[1].text.replace(' ', ''))
+            except IndexError:
+                nalog2020 = 0
     return nalog2021, nalog2020
 
 

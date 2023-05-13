@@ -1,6 +1,6 @@
 import openpyxl
 import configparser
-
+from exeptions import GetFileExeption, WriteFileExeption
 
 def _create_file(config):
     road = config.get("program", "create_file")
@@ -25,26 +25,34 @@ def _create_file(config):
 
 
 def _get_rows(config):
-    road = config.get("program", "read_file")
-    rows = []
-    workbook = openpyxl.load_workbook(road)
+    try:
+        road = config.get("program", "read_file")
+        rows = []
+        workbook = openpyxl.load_workbook(road)
 
-    worksheet = workbook.active
+        worksheet = workbook.active
 
-    for row in worksheet.iter_rows():
-        rows.append([i.value for i in row])
+        for row in worksheet.iter_rows():
+            rows.append([i.value for i in row])
+    except FileNotFoundError:
+        print(f'GetFileExeption: {GetFileExeption.__doc__}')
+        raise GetFileExeption
     return rows
 
 
 def _writer(row):
-    config = configparser.ConfigParser()
-    config.read('config.ini', encoding='utf-8')
-    road = config.get("program", "create_file")
-    workbook = openpyxl.load_workbook(road)
+    try:
+        config = configparser.ConfigParser()
+        config.read('config.ini', encoding='utf-8')
+        road = config.get("program", "create_file")
+        workbook = openpyxl.load_workbook(road)
 
-    worksheet = workbook.active
+        worksheet = workbook.active
 
-    worksheet.append(row)
+        worksheet.append(row)
 
-    # Сохраняем файл
-    workbook.save(road)
+        # Сохраняем файл
+        workbook.save(road)
+    except FileNotFoundError:
+        print(f'WriteFileExeption: {WriteFileExeption.__doc__}')
+        raise WriteFileExeption
