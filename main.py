@@ -105,18 +105,24 @@ def _parser(inns, config):
 
 def _sost_org(browser: WebDriver) -> str:
     sost_org = None
-    for i in browser.find_elements(By.CLASS_NAME, 'field-group-name'):
-        if 'Состояние организации:' in i.text:
-            sost_org = i.text.split(':')[1].replace('"', '').strip()
-            break
+    try:
+        for i in browser.find_elements(By.CLASS_NAME, 'field-group-name'):
+            if 'Состояние организации:' in i.text:
+                sost_org = i.text.split(':')[1].replace('"', '').strip()
+                break
+    except AttributeError:
+        pass
     return sost_org
 
 
 def _okved(browser: WebDriver) -> str:
     okved = None
-    for i in browser.find_elements(By.CLASS_NAME, 'field.row.row__stretch'):
-        if i.get_attribute('data-group') == 'okved':
-            okved = i.find_element(By.CLASS_NAME, 'lnk-appeal').text
+    try:
+        for i in browser.find_elements(By.CLASS_NAME, 'field.row.row__stretch'):
+            if i.get_attribute('data-group') == 'okved':
+                okved = i.find_element(By.CLASS_NAME, 'lnk-appeal').text
+    except AttributeError:
+        pass
     return okved
 
 
@@ -125,7 +131,7 @@ def _msp(browser: WebDriver) -> str:
         msp = browser.find_element(By.CLASS_NAME, 'has-stickers').find_element(By.CLASS_NAME,
                                                                                'has-stickers').text.split(':')[
             1].replace('"', '').strip()
-    except NoSuchElementException:
+    except (NoSuchElementException, AttributeError):
         msp = None
     return msp
 
@@ -155,7 +161,7 @@ def _income(browser: WebDriver) -> tuple[float | None, float | None]:
             income2022 = float(income2022)
         if income2021.replace('.', '', 1).isdigit():
             income2021 = float(income2021)
-    except ValueError:
+    except (ValueError, AttributeError):
         pass
     return income2022, income2021
 

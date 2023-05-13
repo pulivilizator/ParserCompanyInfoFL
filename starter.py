@@ -1,4 +1,9 @@
+import time
 from main import main
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as ex:
+        print(ex)
+        time.sleep(30)
