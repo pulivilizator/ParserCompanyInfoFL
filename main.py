@@ -4,13 +4,13 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from get_and_write_xlsx import _get_rows, _writer, _create_file
 import configparser
 import re
 
 
-def main(inns):
+def _parser(inns, config):
     counter = 0
     sleep = int(config.get("program", "sleep"))
     if sleep < 18:
@@ -26,9 +26,8 @@ def main(inns):
         inns[row].insert(16, None)
         inns[row].insert(16, None)
         inn = str(inns[row][4])
-        print(inn)
         name = inns[row][3]
-        print(name)
+        print(f'Собираются данные о компании: {name}\nИНН: {inn}')
         with BaseOptions(headless).create_driver() as browser:
             browser.get('https://pb.nalog.ru/index.html')
             inn, company = _chek(inn, name)
@@ -46,14 +45,12 @@ def main(inns):
 
                 try:
                     href = browser.find_element(By.CLASS_NAME, 'lnk.company-info').get_attribute('href')
-                except Exception as ex:
+                except WebDriverException:
                     browser.refresh()
                     time.sleep(6)
                     try:
                         href = browser.find_element(By.CLASS_NAME, 'lnk.company-info').get_attribute('href')
-                    except Exception as ex:
-                        print(ex)
-                        print('HREF')
+                    except WebDriverException:
                         _writer(inns[row])
                         continue
                 browser.get(href)
@@ -132,7 +129,7 @@ def _msp(browser: WebDriver) -> str:
     return msp
 
 
-def _income(browser: WebDriver) -> tuple[str | None, str | None]:
+def _income(browser: WebDriver) -> tuple[float | None, float | None]:
     income2022 = income2021 = None
     if 'Суммы доходов и расходов по данным бухгалтерской отчетности организации:' in browser.page_source:
         elem = browser.find_elements(By.CLASS_NAME, 'toggle')[-1]
@@ -149,9 +146,16 @@ def _income(browser: WebDriver) -> tuple[str | None, str | None]:
             print(elems)
         for i in range(len(elems)):
             if elems[i] == '2022':
-                income2022 = elems[i + 1].replace(' ', '')
+                income2022 = elems[i + 1].replace(' ', '').strip()
             if elems[i] == '2021':
-                income2021 = elems[i + 1].replace(' ', '')
+                income2021 = elems[i + 1].replace(' ', '').strip()
+    try:
+        if income2022.replace('.', '', 1).isdigit():
+            income2022 = float(income2022)
+        if income2021.replace('.', '', 1).isdigit():
+            income2021 = float(income2021)
+    except ValueError:
+        pass
     return income2022, income2021
 
 
@@ -204,6 +208,16 @@ def _chek(inn, name) -> tuple[str, str]:
     return inn, company
 
 
+def main():
+    config = configparser.ConfigParser()
+    config.read('config.ini', encoding='utf-8')
+    _create_file(config)
+    inns = _get_rows(config)
+    print(f'Найдено {len(inns)} организаций\n'
+          f'Начинаю собирать информацию.\n')
+    _parser(inns, config)
+
+
 if __name__ == '__main__':
     config = configparser.ConfigParser()
     config.read('config.ini', encoding='utf-8')
@@ -211,4 +225,4 @@ if __name__ == '__main__':
     inns = _get_rows(config)
     print(f'Найдено {len(inns)} организаций\n'
           f'Начинаю собирать информацию.\n')
-    main(inns)
+    _parser(inns)
