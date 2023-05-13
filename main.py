@@ -99,6 +99,7 @@ def _parser(inns, config):
                 _writer(new_row)
             except NoSuchElementException:
                 _writer(inns[row])
+                continue
             time.sleep(sleep)
 
 
