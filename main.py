@@ -97,7 +97,7 @@ def _parser(inns, config):
                 new_row[17] = sost_org
                 new_row[18] = okved
                 _writer(new_row)
-            except NoSuchElementException:
+            except (WebDriverException, IndexError, AttributeError, ValueError):
                 _writer(inns[row])
                 continue
             time.sleep(sleep)
@@ -139,6 +139,7 @@ def _msp(browser: WebDriver) -> str:
 def _income(browser: WebDriver) -> tuple[float | None, float | None]:
     income2022 = income2021 = None
     if 'Суммы доходов и расходов по данным бухгалтерской отчетности организации:' in browser.page_source:
+        elems = []
         elem = browser.find_elements(By.CLASS_NAME, 'toggle')[-1]
         ActionChains(browser).move_to_element(elem).click().perform()
         for i in browser.find_elements(By.CLASS_NAME, 'field-group'):
@@ -148,14 +149,16 @@ def _income(browser: WebDriver) -> tuple[float | None, float | None]:
 
         try:
             elems = [i.text for i in elems]
-        except Exception as ex:
-            print(ex, 'ELEMS')
-            print(elems)
+        except AttributeError:
+            pass
         for i in range(len(elems)):
-            if elems[i] == '2022':
-                income2022 = elems[i + 1].replace(' ', '').strip()
-            if elems[i] == '2021':
-                income2021 = elems[i + 1].replace(' ', '').strip()
+            try:
+                if elems[i] == '2022':
+                    income2022 = elems[i + 1].replace(' ', '').strip()
+                if elems[i] == '2021':
+                    income2021 = elems[i + 1].replace(' ', '').strip()
+            except IndexError:
+                continue
     try:
         if income2022.replace('.', '', 1).isdigit():
             income2022 = float(income2022)
