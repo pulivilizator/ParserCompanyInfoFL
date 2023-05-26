@@ -3,12 +3,12 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.common.exceptions import WebDriverException
-from exeptions import CreateException, AgentsException
+from exceptions.exceptions import CreateException, AgentsException
 from random import choice
 
 
 class BaseOptions:
-    def __init__(self, headless: bool = False, processes: int = 1):
+    def __init__(self, headless: bool = False):
         self.driver = None
         self._headless = headless  # Режим работы браузера (True - headless)
         self._options()

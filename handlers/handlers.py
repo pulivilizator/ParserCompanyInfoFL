@@ -1,12 +1,11 @@
 import time
-from webdriver_project import BaseOptions
+from base_driver.webdriver_project import BaseOptions
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
-from get_and_write_xlsx import _get_rows, _writer, _create_file
-import configparser
+from excel_writer.get_and_write_xlsx import worksheet
 import re
 
 
@@ -16,19 +15,22 @@ def _parser(inns, config):
         sleep = 0
     else:
         sleep -= 18
+
     min_row = int(config.get("program", "write_row"))
     if min_row < 1:
         min_row = 1
+
     headless = bool(int(config.get("program", "headless")))
     for row in range(min_row - 1, len(inns)):
         print(f'Пройдено {row} из {len(inns)} организаций')
+
         inns[row].insert(13, None)
-        inns[row].insert(16, None)
-        inns[row].insert(16, None)
-        inns[row].insert(16, None)
-        inn = str(inns[row][4])
+        [inns[row].insert(16, None) for _ in range(2)]
+
+        inn = str(int(inns[row][4]))
         name = inns[row][3]
         print(f'Собираются данные о компании: {name}\nИНН: {inn}')
+
         with BaseOptions(headless).create_driver() as browser:
             browser.get('https://pb.nalog.ru/index.html')
             inn, company = _chek(inn, name)
@@ -51,43 +53,29 @@ def _parser(inns, config):
                     try:
                         href = browser.find_element(By.CLASS_NAME, 'lnk.company-info').get_attribute('href')
                     except WebDriverException:
-                        _writer(inns[row])
+                        worksheet.writer(inns[row])
                         continue
                 browser.get(href)
                 time.sleep(6)
                 browser.implicitly_wait(5)
 
                 if company == 'ИП':
-                    try:
-                        okved = browser.find_elements(By.CLASS_NAME, 'field.row.row__stretch')[-1].find_element(
-                            By.CLASS_NAME, 'lnk-appeal').text
-                    except NoSuchElementException:
-                        okved = None
-
-                    try:
-                        msp = browser.find_element(By.CLASS_NAME, 'has-stickers').find_element(By.CLASS_NAME,
-                                                                                               'has-stickers').text.split(
-                            ':')[1].replace('"', '').strip()
-                    except NoSuchElementException:
-                        msp = None
+                    okved = _okved(browser, company)
+                    msp = _msp(browser)
 
                     new_row = inns[row].copy()
                     new_row[16] = msp
                     new_row[18] = okved
-                    _writer(new_row)
+                    worksheet.writer(new_row)
                     time.sleep(sleep)
+
                     continue
 
                 sost_org = _sost_org(browser)
-
                 okved = _okved(browser)
-
                 nalog2021, nalog2020 = _nalog(browser)
-
                 income2022, income2021 = _income(browser)
-
                 msp = _msp(browser)
-
                 new_row = inns[row].copy()
                 new_row[10] = income2021
                 new_row[11] = income2022
@@ -96,9 +84,9 @@ def _parser(inns, config):
                 new_row[16] = msp
                 new_row[17] = sost_org
                 new_row[18] = okved
-                _writer(new_row)
-            except (WebDriverException, IndexError, AttributeError, ValueError):
-                _writer(inns[row])
+                worksheet.writer(new_row)
+            except (WebDriverException, IndexError, AttributeError, ValueError) as ex:
+                worksheet.writer(inns[row])
                 continue
             time.sleep(sleep)
 
@@ -115,12 +103,16 @@ def _sost_org(browser: WebDriver) -> str:
     return sost_org
 
 
-def _okved(browser: WebDriver) -> str:
+def _okved(browser: WebDriver, company=None) -> str:
     okved = None
     try:
-        for i in browser.find_elements(By.CLASS_NAME, 'field.row.row__stretch'):
-            if i.get_attribute('data-group') == 'okved':
-                okved = i.find_element(By.CLASS_NAME, 'lnk-appeal').text
+        if company == 'ИП':
+            okved = browser.find_elements(By.CLASS_NAME, 'field.row.row__stretch')[-1].find_element(
+                By.CLASS_NAME, 'lnk-appeal').text
+        else:
+            for i in browser.find_elements(By.CLASS_NAME, 'field.row.row__stretch'):
+                if i.get_attribute('data-group') == 'okved':
+                    okved = i.find_element(By.CLASS_NAME, 'lnk-appeal').text
     except (NoSuchElementException, AttributeError):
         pass
     return okved
@@ -218,14 +210,4 @@ def _chek(inn, name) -> tuple[str, str]:
 
     return inn, company
 
-
-def main():
-    config = configparser.ConfigParser()
-    config.read('config.ini', encoding='utf-8')
-    if not int(config.get("program", "write_type")):
-        _create_file(config)
-    inns = _get_rows(config)
-    print(f'Найдено {len(inns)} организаций\n'
-          f'Начинаю собирать информацию.\n')
-    _parser(inns, config)
 
