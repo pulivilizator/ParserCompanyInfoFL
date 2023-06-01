@@ -56,7 +56,10 @@ def _parser(inns, config):
                         worksheet.writer(inns[row])
                         continue
                 browser.get(href)
-                time.sleep(6)
+                time.sleep(2)
+                while 'Пожалуйста, подождите' in browser.page_source:
+                    time.sleep(1)
+                time.sleep(3)
                 browser.implicitly_wait(5)
 
                 if company == 'ИП':
