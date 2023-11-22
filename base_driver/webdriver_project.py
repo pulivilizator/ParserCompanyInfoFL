@@ -6,7 +6,6 @@ from selenium.common.exceptions import WebDriverException
 from exceptions.exceptions import CreateException, AgentsException
 from random import choice
 
-
 class BaseOptions:
     def __init__(self, headless: bool = False):
         self.driver = None
@@ -24,6 +23,7 @@ class BaseOptions:
     def _options(self):
         self.options = webdriver.ChromeOptions()
         self.options.add_experimental_option("excludeSwitches", ["enable-logging"])
+        self.options.add_argument("--disable-dev-shm-usage")
         self.options.add_argument('--start-maximized')
         try:
             with open('user_agent.txt', 'r', encoding='utf-8') as file:

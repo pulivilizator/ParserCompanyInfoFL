@@ -5,7 +5,7 @@ from exceptions.exceptions import GetFileExeption, WriteFileExeption
 class WorkSheet:
     def __init__(self):
         self.config = configparser.ConfigParser()
-        self.config.read('config.ini', encoding='utf-8')
+        self.config.read('config.ini', encoding='utf-8-sig')
     def create_file(self):
         road = self.config.get("program", "write_in_file")
         workbook = openpyxl.Workbook()

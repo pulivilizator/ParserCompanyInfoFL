@@ -4,7 +4,7 @@ import configparser
 
 def main():
     config = configparser.ConfigParser()
-    config.read('config.ini', encoding='utf-8')
+    config.read('config.ini', encoding='utf-8-sig')
     if not int(config.get("program", "write_type")):
         worksheet.create_file()
     inns = worksheet.get_rows()
